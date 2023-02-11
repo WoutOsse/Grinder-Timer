@@ -170,20 +170,39 @@ void Display::printMenuState(int menuState) {
     display->clearDisplay();
     display->setTextColor(WHITE);
     display->setTextSize(2);
-    if (menuState == 0) { 
+    if (menuState == 0) {  // WEIGHT
         display->setCursor(30,15),
         display->print("WEIGHT");
         display->setCursor(40,40),
         display->print("CALC");
 
-    }
-    if (menuState == 1) {
+    } else if (menuState == 1) { // RESSET
         display->setCursor(30,20),
         display->print("RESET?");
-    }
-    if (menuState == 2) { 
+    } else if (menuState == 2) {  //EXIT
         display->setCursor(10,20),
         display->print("EXIT MENU");
+    } else if (menuState == 3) {  //BUTTONMODE
+        display->setCursor(1,20),
+        display->print("BUTTON MODE");
+    }
+    display->display();
+}
+
+void Display::printButtonToggle(bool toggle) { //Toggle true = toggle mode, otherwise hold
+    display->clearDisplay();
+    display->setTextColor(WHITE);
+    display->setTextSize(2);
+    display->setCursor(10,15),
+    display->print("Button Mode");
+    
+    if (toggle == true) {  // toggle
+        display->setCursor(20,40),
+        display->print("Toggle");
+
+    } else if (toggle == false) { // HOLD
+        display->setCursor(25,40),
+        display->print("Hold");
     }
     display->display();
 }

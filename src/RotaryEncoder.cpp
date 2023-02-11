@@ -67,12 +67,30 @@ bool RotaryEncoder::button2State() {       // START_BTN
     return false;
 }
 
-bool RotaryEncoder::button3State() {        // RUN_BTN
+bool RotaryEncoder::RUN_BTN_STATE(bool toggle, bool running) {   // RUN_BTN - continuous grinding
     button3.read();
-    if (button3.isPressed()) {
-    return true;
+    if (toggle == false) {  //hold
+        if (button3.isPressed()) {
+        return true;
+        } else { 
+        return false;
+        }
+
+    } else { //toggle
+        if (button3.wasReleased() == true && running == false) { 
+            return true;
+        } 
+            return false;
+            
+        if (running == true) { 
+            if (button3.isPressed() == true || button3.wasPressed() == true || button2State() == true || button1State() == true) {  //any button will disable grinding
+            return false;
+            }
+            return true;
+        }
+
     }
-    return false;
+
 }
 
 bool RotaryEncoder::action() { 
@@ -109,12 +127,13 @@ void RotaryEncoder::ledFade() {         // use sine wave for ledFade - cos(x) = 
     }
 }
 
-void RotaryEncoder::ledFlash(bool whatButton) {  // whatButton? -> True = START_BTN, false = RUN_BTN
+void RotaryEncoder::ledFlash(bool whatButton, bool secondaryOff) { // whatButton? -> True = START_BTN, false = RUN_BTN
     if ((millis() - this->lastFlash) > flashTime) {                 
         this->ledON = !this->ledON;
         this->lastFlash = millis();
-            analogWrite(whatButton ? START_BTN_LED : RUN_BTN_LED, this->ledON ? 255 : 0);           // only writes every flashTime interval
-            analogWrite(whatButton ? RUN_BTN_LED : START_BTN_LED, 0);                               // turn the other one off. 
+            analogWrite(whatButton ? START_BTN_LED : RUN_BTN_LED, this->ledON ? 255 : 0);    // only writes every flashTime interval
+            analogWrite(whatButton ? RUN_BTN_LED : START_BTN_LED, secondaryOff ? 0 : 255);         // turn the other one off. 
+                           
     }
 }
 

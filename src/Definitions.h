@@ -8,6 +8,7 @@
 #define SSR 6 // Start Button Input Pins
 #define SINGLEDOSE_DEFAULT_TIME 2.50 // Default Single Dose Time in S
 #define DOUBLEDOSE_DEFAULT_TIME 5.00 // Default Double Dose Time in S
+#define BUTTON_TOGGLE_DEFAULT 0 //Default is toggle, not hold.
 #define roundf round        //define to use math round
 #define START_BTN_LED 9     //PWM
 #define RUN_BTN_LED 10      //PWM

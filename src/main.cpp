@@ -15,12 +15,12 @@ Display *display;
 Dosage *dosage;
 Grinder *grinder;
 enum displayState {SINGLE, DOUBLE, MENU};
-enum menuState {WEIGHT, RESET, EXIT};
-uint8_t displayState = DOUBLE;
+enum menuState {WEIGHT, RESET, EXIT, BUTTONMODE};
+uint8_t displayState = DOUBLE; //defaults
 uint8_t menuState = WEIGHT;
 
 // State Machine
-enum States {NORMAL, SETTINGS, SET_DOSE, GRINDING, CONTINUOUS, SET_RESET, WEIGHTMODE};
+enum States {NORMAL, SETTINGS, SET_DOSE, GRINDING, CONTINUOUS, SET_RESET, WEIGHTMODE, SET_BUTTONMODE};
 uint8_t state = NORMAL;
 
 bool reset = false;
@@ -28,6 +28,7 @@ unsigned long startTime;
 float GrinderSpeed;
 float TargetTime;
 bool lastGrind; //last singleDoseSelected full timed grind
+bool lastButtonToggleMode; 
 
 void setup() {
   startTime = millis();
@@ -64,7 +65,7 @@ void loop() {
         break;
       }
       // continuous grinding
-      if (encoder->button3State() == true) {
+      if (encoder->RUN_BTN_STATE(dosage->buttonToggleMode, false) == true) {
         state = CONTINUOUS;
         break;
         }
@@ -113,7 +114,7 @@ void loop() {
       break;
 
 // MENU / SETTINGS
-    case SETTINGS:
+  case SETTINGS:
     // display
     startTime = millis();
     while (encoder->button1State() == false) {
@@ -134,7 +135,7 @@ void loop() {
         }
       startTime = millis();
       }
-      // make sure menu doesnt exit criteria
+      // make sure menu doesnt exit criteria due to using 'wasTurned' 
       if (menuState > 2 || menuState < 0) {
         menuState = 1;
       }
@@ -155,6 +156,9 @@ void loop() {
       } 
       if (menuState == EXIT) {
         state = NORMAL;
+      }
+      if (menuState == BUTTONMODE) { 
+        state = SET_BUTTONMODE;
       }
       startTime = millis();
       break;
@@ -195,7 +199,7 @@ void loop() {
       break;
 
 // TIMED GRINDING MODE
-    case GRINDING:
+  case GRINDING:
     startTime = millis();
       grinder->on(dosage->singleDoseSelected ? dosage->singleDoseTime : dosage->doubleDoseTime);
       while (millis() < grinder->getTargetTime()) {
@@ -209,7 +213,7 @@ void loop() {
           break;
         }
 
-        encoder->ledFlash(true);
+        encoder->ledFlash(true, true);
       };
 
       if (state == NORMAL) { 
@@ -228,16 +232,23 @@ void loop() {
       break;
 
 // Continuous grinding
-    case CONTINUOUS:
+  case CONTINUOUS:
     startTime = millis();
     grinder->continuous();
-    while (encoder->button3State() == true) { 
+    while (encoder->RUN_BTN_STATE(dosage->buttonToggleMode, true) == true) { 
       display->printTime((millis() - grinder->startTime)/ 1000.0);
-      encoder->ledFlash(false);
+      encoder->ledFlash(false, true);
     }
+    startTime = millis(); // repurpose 
     grinder->off();
     encoder->ledOn();
-    delay(500); // hold total run time for a while
+    while(encoder->RUN_BTN_STATE(false, false) == true) { //while the button is being pressed, we can't continue
+      delay(1);
+    }
+    encoder->RUN_BTN_STATE(true, false); //update button one extra time, so it doesnt start over (can return true here, if in toggle mode, we don't want that registered)
+    while(startTime + 500 >= millis()) {  //wait atleast 500ms from stop.
+      delay(1);
+    }
     state = NORMAL;
     startTime = millis();
     encoder->ledReset();
@@ -245,7 +256,7 @@ void loop() {
 
 
 // RESET MODE
-    case SET_RESET:
+  case SET_RESET:
     encoder->ledOn();
     startTime = millis();
     display->resetState = false;
@@ -277,7 +288,7 @@ void loop() {
 
 
 // WEIGHT MODE
-    case WEIGHTMODE:
+  case WEIGHTMODE:
     // mode
     encoder->ledOn();
     display->targetWeightMode = false;
@@ -353,5 +364,33 @@ void loop() {
       state = NORMAL;
       encoder->ledReset();
       break;
+      
+// Set Button Mode (Continuous toggle / hold)
+  case SET_BUTTONMODE:
+    encoder->ledFlash(false, false);
+    startTime = millis();
+    lastButtonToggleMode = dosage->buttonToggleMode; //if not saved.
+    
+    
+    while (encoder->button1State() == false) {
+      display->printButtonToggle(dosage->buttonToggleMode);
+      if (encoder->wasTurnedRight() || encoder->wasTurnedLeft()) { 
+       dosage->buttonToggleMode =! dosage->buttonToggleMode;
+       startTime = millis();
+      }
+
+      if (startTime + 15000 < millis()) {  // 15s cancel  
+        dosage->buttonToggleMode = lastButtonToggleMode;
+        displayState = NORMAL;
+        encoder->ledReset();
+        startTime = millis();
+        break;
+      }
     }
-  }
+    dosage->writeToEEPROM(); //Button state true -> pressed & saved. 
+    displayState = NORMAL;
+    encoder->ledReset();
+    startTime = millis();
+    break; 
+  } // state machine
+} // Loop

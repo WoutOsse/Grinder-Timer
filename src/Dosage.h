@@ -14,4 +14,5 @@ class Dosage
     void writeToEEPROM();
     float dosageWeight;
     float targetWeight;  
+    bool buttonToggleMode; //True = toggle, false = hold.
 };

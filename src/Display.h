@@ -24,5 +24,6 @@ class Display{
     void acceptNew(float targetTime);
     void printMenu();
     void printMenuState(int menuState);
+    void printButtonToggle(bool toggle);
     void off(); 
 };

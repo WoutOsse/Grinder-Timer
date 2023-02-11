@@ -22,12 +22,12 @@ class RotaryEncoder
     bool checkstop();
     bool button1State();
     bool button2State();
-    bool button3State();
+    bool RUN_BTN_STATE(bool toggle, bool running);
     float encValue;
     bool action();
     void ledOff();
     void ledOn();
     void ledFade();
-    void ledFlash(bool whatButton);
+    void ledFlash(bool whatButton, bool secondaryOff);
     void ledReset();
 };
